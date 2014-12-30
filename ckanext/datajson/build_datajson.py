@@ -51,8 +51,8 @@ def make_datajson_entry(package):
 
             ("title", strip_if_string(package["title"])),  # required
 
-            # ("accessLevel", 'public'),  # required
-            ("accessLevel", strip_if_string(extras.get('public_access_level'))),  # required
+            ("accessLevel", 'public'),  # required
+            # ("accessLevel", strip_if_string(extras.get('public_access_level'))),  # required
 
             # ("accrualPeriodicity", "R/P1Y"),  # optional
             # ('accrualPeriodicity', 'accrual_periodicity'),
@@ -76,8 +76,8 @@ def make_datajson_entry(package):
 
             # ("description", 'asdfasdf'),  # required
 
-            ("identifier", strip_if_string(extras.get('unique_id'))),  # required
-            # ("identifier", 'asdfasdfasdf'),  # required
+            # ("identifier", strip_if_string(extras.get('unique_id'))),  # required
+            ("identifier", strip_if_string(package.get('id'))),  # required
 
             ("isPartOf", parent_dataset_id),  # optional
             ("issued", strip_if_string(extras.get('release_date'))),  # optional
@@ -89,7 +89,7 @@ def make_datajson_entry(package):
 
             ("license", strip_if_string(extras.get("license_new"))),    # required-if-applicable
 
-            ("modified", strip_if_string(extras.get("modified"))),  # required
+            ("modified", strip_if_string(package.get("metadata_modified"))),  # required TODO
 
             ("primaryITInvestmentUII", strip_if_string(extras.get('primary_it_investment_uii'))),  # optional
 
@@ -97,7 +97,7 @@ def make_datajson_entry(package):
             # ("@type", "org:Organization"),
             # ("name", "Widget Services")
             # ])),  # required
-            ("publisher", get_publisher_tree(extras)),  # required
+            ("publisher", get_publisher_tree(package=package)),  # required
 
             ("rights", strip_if_string(extras.get('access_level_comment'))),  # required
 
@@ -284,24 +284,50 @@ def generate_distribution(package):
 
 
 def get_contact_point(extras, package):
-    for required_field in ["contact_name", "contact_email"]:
-        if required_field not in extras.keys():
-            raise KeyError(required_field)
+    fields = [('contact_name', 'contact_email'),
+              ('maintainer', 'maintainer_email'),
+              ('author', 'author_email')]
+    contact_point = None
 
-    email = strip_if_string(extras['contact_email'])
-    if email is None or '@' not in email:
-        raise KeyError(required_field)
+    for name_field, email_field in fields:
+        try:
+            for required_field in [name_field, email_field]:
+                if (required_field not in extras.keys() and
+                        required_field not in package.keys()):
+                    raise KeyError(required_field)
 
-    fn = strip_if_string(extras['contact_name'])
-    if fn is None:
-        raise KeyError(required_field)
+            try:
+                email = strip_if_string(package[email_field])
+            except KeyError:
+                email = strip_if_string(extras[email_field])
 
-    contact_point = OrderedDict([
-        ('@type', 'vcard:Contact'),  # optional
-        ('fn', fn),  # required
-        ('hasEmail', 'mailto:' + email),  # required
-    ])
-    return contact_point
+            if email is None or '@' not in email:
+                raise KeyError(required_field)
+
+            try:
+                fn = strip_if_string(package[name_field])
+            except KeyError:
+                fn = strip_if_string(extras[name_field])
+
+            if fn is None:
+                user = email.split('@')[0]
+                names = user.split('.')
+                if len(names) == 2:
+                    fn = ' '.join(names).title()
+                else:
+                    raise KeyError(required_field)
+
+            contact_point = OrderedDict([
+                ('@type', 'vcard:Contact'),  # optional
+                ('fn', fn),  # required
+                ('hasEmail', 'mailto:' + email),  # required
+            ])
+            break
+        except KeyError:
+            pass
+    if contact_point is not None:
+        return contact_point
+    raise KeyError(required_field)
 
 
 def extra(package, key, default=None):
@@ -312,10 +338,17 @@ def extra(package, key, default=None):
     return default
 
 
-def get_publisher_tree(extras):
+def get_publisher_tree(extras=(), package=None):
     # Sorry guys
     # TODO refactor that to recursion? any refactor would be nice though
-    publisher = strip_if_string(extras.get('publisher'))
+    if package:
+        try:
+            publisher = strip_if_string(package['organization']['title'])
+        except KeyError:
+            pass
+    else:
+        publisher = strip_if_string(extras.get('publisher'))
+
     if publisher is None:
         raise KeyError('publisher')
 

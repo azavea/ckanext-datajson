@@ -193,17 +193,11 @@ def make_json():
     # Create data.json only using public and public-restricted datasets, datasets marked non-public are not exposed
     for pkg in packages:
         extras = dict([(x['key'], x['value']) for x in pkg['extras']])
-        try:
-            if not (re.match(r'[Nn]on-public', extras['public_access_level'])):
-                datajson_entry = make_datajson_entry(pkg)
-                if datajson_entry:
-                    output.append(datajson_entry)
-                else:
-                    logger.warn("Dataset id=[%s], title=[%s] omitted\n", pkg.get('id', None), pkg.get('title', None))
-        except KeyError:
-            logger.warn("Dataset id=[%s], title=[%s] missing required 'public_access_level' field", pkg.get('id', None),
-                        pkg.get('title', None))
-            pass
+        datajson_entry = make_datajson_entry(pkg)
+        if datajson_entry:
+            output.append(datajson_entry)
+        else:
+            logger.warn("Dataset id=[%s], title=[%s] omitted\n", pkg.get('id', None), pkg.get('title', None))
     return output
 
 
