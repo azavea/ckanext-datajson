@@ -117,22 +117,6 @@ def do_validation(doc, errors_array):
                               "The field 'accessLevel' had an invalid value: \"%s\"" % item["accessLevel"],
                               dataset_name)
 
-            # bureauCode # required
-            if check_required_field(item, "bureauCode", list, dataset_name, errs):
-                for bc in item["bureauCode"]:
-                    if not isinstance(bc, (str, unicode)):
-                        add_error(errs, 5, "Invalid Required Field Value", "Each bureauCode must be a string",
-                                  dataset_name)
-                    elif ":" not in bc:
-                        add_error(errs, 5, "Invalid Required Field Value",
-                                  "The bureau code \"%s\" is invalid. "
-                                  "Start with the agency code, then a colon, then the bureau code." % bc,
-                                  dataset_name)
-                    elif bc not in omb_burueau_codes:
-                        add_error(errs, 5, "Invalid Required Field Value",
-                                  "The bureau code \"%s\" was not found in our list "
-                                  "(https://project-open-data.cio.gov/data/omb_bureau_codes.csv)." % bc, dataset_name)
-
             # contactPoint # required
             if check_required_field(item, "contactPoint", dict, dataset_name, errs):
                 cp = item["contactPoint"]
@@ -182,16 +166,6 @@ def do_validation(doc, errors_array):
                     add_error(errs, 5, "Invalid Required Field Value",
                               "The field \"modified\" is not in valid format: \"%s\"" % item['modified'], dataset_name)
 
-            # programCode # required
-            if check_required_field(item, "programCode", list, dataset_name, errs):
-                for pc in item["programCode"]:
-                    if not isinstance(pc, (str, unicode)):
-                        add_error(errs, 5, "Invalid Required Field Value",
-                                  "Each programCode in the programCode array must be a string", dataset_name)
-                    elif not PROGRAM_CODE_REGEX.match(pc):
-                        add_error(errs, 50, "Invalid Field Value (Optional Fields)",
-                                  "One of programCodes is not in valid format (ex. 018:001): \"%s\"" % pc, dataset_name)
-
             # publisher # required
             if check_required_field(item, "publisher", dict, dataset_name, errs):
                 # publisher - name # required
@@ -220,14 +194,16 @@ def do_validation(doc, errors_array):
                     # distribution - downloadURL # Required-If-Applicable
                     check_url_field(False, dt, "downloadURL", distribution_name, errs)
 
+                    # We may want to revisit the code below at some point.
+
                     # distribution - mediaType # Required-If-Applicable
-                    if 'downloadURL' in dt:
-                        if check_string_field(dt, "mediaType", 1, distribution_name, errs):
-                            if not IANA_MIME_REGEX.match(dt["mediaType"]):
-                                add_error(errs, 5, "Invalid Field Value",
-                                          "The distribution mediaType \"%s\" is invalid. "
-                                          "It must be in IANA MIME format." % dt["mediaType"],
-                                          distribution_name)
+                    # if 'downloadURL' in dt:
+                    #     if check_string_field(dt, "mediaType", 1, distribution_name, errs):
+                    #         if not IANA_MIME_REGEX.match(dt["mediaType"]):
+                    #             add_error(errs, 5, "Invalid Field Value",
+                    #                       "The distribution mediaType \"%s\" is invalid. "
+                    #                       "It must be in IANA MIME format." % dt["mediaType"],
+                    #                       distribution_name)
 
                     # distribution - accessURL # optional
                     check_url_field(False, dt, "accessURL", distribution_name, errs)
