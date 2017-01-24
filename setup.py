@@ -25,7 +25,7 @@ setup(
 	entry_points=\
 	"""
         [ckan.plugins]
-	datajson=ckanext.datajson:DataJsonPlugin
+	datajson=ckanext.datajson.plugin:DataJsonPlugin
 	datajson_harvest=ckanext.datajson:DataJsonHarvester
 	cmsdatanav_harvest=ckanext.datajson:CmsDataNavigatorHarvester
 	""",
